@@ -1,6 +1,9 @@
 // src/components/Scrolling/Landing.tsx
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import gsap from "gsap";
+import { ScrollToPlugin } from "gsap/ScrollToPlugin";
+
 import Home from "../Home/Home";
 import About from "../About/About";
 import Skills from "../Skills/Skills";
@@ -8,55 +11,123 @@ import Work from "../Work/Work";
 import Contact from "../Contact/Conact";
 import "./Landing.css";
 
+gsap.registerPlugin(ScrollToPlugin);
+
 const SECTIONS = ["home", "about", "skills", "work", "contact"] as const;
 type SectionKey = typeof SECTIONS[number];
 
 export default function Landing() {
-  const navigate = useNavigate();
-  const { pathname } = useLocation();
-
+  const scrollerRef = useRef<HTMLElement | null>(null);
   const sectionEls = useRef<Record<SectionKey, HTMLElement | null>>({
     home: null, about: null, skills: null, work: null, contact: null,
   });
+
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const isAnimatingRef = useRef(false);
+  const lastWheelTsRef = useRef(0);
+  const pendingIndexRef = useRef<number | null>(null); // ako dođe nova ruta tokom animacije
 
   const setRef = (key: SectionKey) => (el: HTMLElement | null) => {
     sectionEls.current[key] = el;
   };
 
-  const scrollTo = (key: SectionKey, behavior: ScrollBehavior = "smooth") => {
-    const el = sectionEls.current[key];
-    if (el) el.scrollIntoView({ behavior, block: "start" });
+  const indexOfPath = (p: string): number => {
+    const seg = (p.replace(/^\//, "") || "home") as SectionKey;
+    const idx = SECTIONS.indexOf(seg);
+    return idx >= 0 ? idx : 0;
   };
 
+  const animateTo = (index: number) => {
+    const scroller = scrollerRef.current;
+    const key = SECTIONS[index];
+    const target = sectionEls.current[key];
+    if (!scroller || !target) return;
+
+    // prekini prethodne tweenove nad scrollerom da ne ostanu "viseci"
+    gsap.killTweensOf(scroller);
+
+    isAnimatingRef.current = true;
+    pendingIndexRef.current = null;
+
+    gsap.to(scroller, {
+      duration: 0.8,
+      ease: "power2.inOut",
+      scrollTo: { y: target, offsetY: 0, autoKill: false },
+      onComplete: () => {
+        setCurrentIndex(index);
+        isAnimatingRef.current = false;
+
+        // ako se tokom animacije tražila nova destinacija (npr. klik u headeru), odvezimo i nju
+        if (pendingIndexRef.current !== null && pendingIndexRef.current !== index) {
+          const next = pendingIndexRef.current;
+          pendingIndexRef.current = null;
+          animateTo(next);
+        }
+      },
+    });
+  };
+
+  // Ruta -> skrol (radi i za klikove iz Header-a i direktan URL)
   useEffect(() => {
-    const seg = (pathname.replace(/^\//, "") || "home") as SectionKey;
-    if (SECTIONS.includes(seg)) {
-      scrollTo(seg, performance.now() < 2000 ? "auto" : "smooth");
+    const targetIdx = indexOfPath(pathname);
+    if (isAnimatingRef.current) {
+      // ako animacija u toku — zapamti željeni index pa odradi posle
+      pendingIndexRef.current = targetIdx;
+    } else if (targetIdx !== currentIndex) {
+      animateTo(targetIdx);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
+  // Wheel -> odmah sledeća/prethodna sekcija
   useEffect(() => {
-    const io = new IntersectionObserver(
-      (entries) => {
-        const best = entries
-          .filter(e => e.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (!best) return;
-        const key = (best.target as HTMLElement).dataset.section as SectionKey;
-        if (key) navigate(`/${key}`, { replace: false });
-      },
-      { threshold: Array.from({ length: 11 }, (_, i) => i / 10) }
-    );
-    SECTIONS.forEach((k) => {
-      const el = sectionEls.current[k];
-      if (el) io.observe(el);
-    });
-    return () => io.disconnect();
-  }, [navigate]);
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+
+    const COOLDOWN = 700; // ms – minimalni razmak između prelaza
+    const onWheel = (e: WheelEvent) => {
+      // Za potpuno kontrolisan paging: spreči nativni scroll
+      e.preventDefault();
+
+      const now = performance.now();
+      if (isAnimatingRef.current || now - lastWheelTsRef.current < COOLDOWN) return;
+
+      const dir = e.deltaY > 0 ? 1 : -1;
+      let next = currentIndex + dir;
+      next = Math.max(0, Math.min(SECTIONS.length - 1, next));
+      if (next === currentIndex) return;
+
+      lastWheelTsRef.current = now;
+
+      // ažuriramo rutu (Landing useEffect će pozvati animateTo)
+      navigate(`/${SECTIONS[next]}`, { replace: false });
+    };
+
+    // bitno: passive: false da bismo smeli e.preventDefault()
+    scroller.addEventListener("wheel", onWheel, { passive: false });
+
+    return () => scroller.removeEventListener("wheel", onWheel as any);
+  }, [currentIndex, navigate]);
+
+  // Na mount: poravnaj se sa trenutnom rutom bez animacije (prvi render)
+  useEffect(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+    const idx = indexOfPath(pathname);
+    const key = SECTIONS[idx];
+    const target = sectionEls.current[key];
+    if (target) {
+      scroller.scrollTo({ top: target.offsetTop, behavior: "auto" });
+      setCurrentIndex(idx);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
-    <main className="snap-container">
-      {/* HOME (your real Home component) */}
+    <main ref={scrollerRef} className="snap-container">
       <section ref={setRef("home")} data-section="home" className="snap-section">
         <div className="home-section-wrap">
           <Home />

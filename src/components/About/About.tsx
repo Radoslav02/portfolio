@@ -35,7 +35,9 @@ function SlotWord({
 
     gsap.set(el, { pointerEvents: "none" });
     const ctx = gsap.context(() => {
-      const spans = Array.from(el.querySelectorAll<HTMLSpanElement>("[data-letter]"));
+      const spans = Array.from(
+        el.querySelectorAll<HTMLSpanElement>("[data-letter]")
+      );
       const tweens: gsap.core.Tween[] = [];
 
       spans.forEach((span, idx) => {
@@ -55,7 +57,8 @@ function SlotWord({
             delay,
             ease: "power1.out",
             onUpdate: () => {
-              span.textContent = CHARSET[Math.floor(Math.random() * CHARSET.length)];
+              span.textContent =
+                CHARSET[Math.floor(Math.random() * CHARSET.length)];
             },
             onComplete: () => {
               span.textContent = finalChar;
@@ -65,7 +68,11 @@ function SlotWord({
       });
 
       const totalFinish =
-        startDelay + letters.length * perCharStagger + baseDuration + randomDuration + 0.2;
+        startDelay +
+        letters.length * perCharStagger +
+        baseDuration +
+        randomDuration +
+        0.2;
 
       const fin = gsap.delayedCall(totalFinish, () => {
         if (collapseAfter) {
@@ -83,7 +90,16 @@ function SlotWord({
     }, containerRef);
 
     return () => ctx.revert();
-  }, [letters, text, startDelay, perCharStagger, baseDuration, randomDuration, onAllComplete, collapseAfter]);
+  }, [
+    letters,
+    text,
+    startDelay,
+    perCharStagger,
+    baseDuration,
+    randomDuration,
+    onAllComplete,
+    collapseAfter,
+  ]);
 
   return (
     <span ref={containerRef} className={className}>
@@ -111,11 +127,14 @@ export default function About() {
 
       {/* Description text */}
       <p className="about-text">
-        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed sit amet
-        facilisis urna. Praesent ac bibendum metus, at placerat dui. Nullam
-        dignissim tincidunt enim, vitae pellentesque nulla egestas vel. Curabitur
-        venenatis, orci in feugiat luctus, magna lacus suscipit felis, ut aliquam
-        ipsum lorem nec nisi.
+        I am a 4th-year Computer Science student at the Faculty of Mathematics,
+        University of Novi Sad, with a solid foundation in computer operations
+        and software engineering principles. My academic journey has equipped me
+        with practical experience, particularly in Java and JavaScript (React),
+        bolstered by a hands-on internship at Comdata software company. I thrive
+        in team-oriented environments and am committed to learning and adhering
+        to industry standards. I am eager to further develop my skills through
+        industry placements and internships.
       </p>
     </div>
   );

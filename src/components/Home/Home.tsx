@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { FaGithub, FaLinkedin, FaInstagram } from "react-icons/fa";
 import "./Home.css";
+import profileImage from "../../assets/unnamed.jpg";
 
 export default function Home() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -113,36 +114,36 @@ export default function Home() {
       <div className="home-content">
         {/* LEFT: Profile Image */}
         <div className={`home-image ${showImage ? "visible" : ""}`}>
-          <img alt="Radoslav" />
+          <img src={profileImage} alt="Radoslav" />
         </div>
 
         {/* RIGHT: Intro Text */}
         <div className={`home-text ${showText ? "visible" : ""}`}>
           <h1 ref={textRef}>Hi, I’m Radoslav</h1>
           <p>
-            Full-Stack Developer | Angular | React | .NET Core | Passionate
-            about creating smooth, futuristic user experiences.
+            Software engineer| Angular | React | .NET Core | Java | 
+            I design and code things. and I love what I do.
           </p>
 
           {/* Social Icons */}
           {showIcons && (
             <div className="social-icons">
               <a
-                href="https://github.com/yourusername"
+                href="https://github.com/Radoslav02"
                 target="_blank"
                 rel="noreferrer"
               >
                 <FaGithub />
               </a>
               <a
-                href="https://linkedin.com/in/yourusername"
+                href="https://www.linkedin.com/in/radoslav-pavkov-7a7421321/"
                 target="_blank"
                 rel="noreferrer"
               >
                 <FaLinkedin />
               </a>
               <a
-                href="https://instagram.com/yourusername"
+                href="https://www.instagram.com/radoslavpavkov/"
                 target="_blank"
                 rel="noreferrer"
               >
