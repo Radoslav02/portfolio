@@ -1,0 +1,97 @@
+.header-container {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 120px;
+  background: #000;
+  z-index: 2000;        /* above everything */
+  isolation: isolate;   /* own stacking context */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 50px;
+  gap: 24px;
+}
+
+.header-left, .header-right {
+  display: flex;
+  align-items: center;
+}
+
+.header-title {
+  margin: 0;
+  color: #00ff8a;
+  font-size: 28px;
+  letter-spacing: 1px;
+  text-shadow: 0 0 6px rgba(0,255,138,0.5);
+  cursor: pointer;
+}
+
+.header-right {
+  gap: 18px;
+}
+
+.menu-item {
+  color: #00ff8a;
+  font-size: 18px;
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 6px rgba(0,255,138,0.45);
+  cursor: pointer;
+  display: inline-flex;
+}
+
+.menu-item .slot-letter {
+  display: inline-block;
+  min-width: 0.6ch; /* keep width stable during roll */
+}
+
+/* 🌟 General Hover Styling */
+.menu-item,
+.header-title {
+  position: relative;
+  transition: color 0.25s ease, text-shadow 0.25s ease;
+}
+
+/* ✨ Neon glow intensifies on hover */
+.menu-item:hover,
+.header-title:hover {
+  color: #00ffaa; /* brighter green */
+  text-shadow: 
+    0 0 6px #00ffaa,
+    0 0 12px #00ffaa,
+    0 0 20px #00ffaa;
+}
+
+/* ⚡ Glitchy animated underline for menu items */
+.menu-item::after {
+  content: "";
+  position: absolute;
+  bottom: -3px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: #00ffaa;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.25s ease-out;
+  box-shadow: 0 0 8px #00ffaa, 0 0 16px #00ffaa;
+}
+
+.menu-item:hover::after {
+  transform: scaleX(1);
+}
+
+/* 🟢 Matrix-like flicker effect */
+@keyframes matrixFlicker {
+  0%, 100% {
+    opacity: 1;
+    text-shadow: 0 0 6px #00ff8a, 0 0 10px #00ff8a;
+  }
+  50% {
+    opacity: 0.7;
+    text-shadow: 0 0 3px #00ffaa, 0 0 6px #00ffaa;
+  }
+}
+
+.menu-item:hover {
+  animation: matrixFlicker 0.3s ease-in-out infinite alternate;
+}
