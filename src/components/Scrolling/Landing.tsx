@@ -6,7 +6,7 @@ import About from "../About/About";
 import Skills from "../Skills/Skills";
 import Work from "../Work/Work";
 import Contact from "../Contact/Conact";
-import "./landing.css";
+import "./Landing.css";
 
 const SECTIONS = ["home", "about", "skills", "work", "contact"] as const;
 type SectionKey = typeof SECTIONS[number];
