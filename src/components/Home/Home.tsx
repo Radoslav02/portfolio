@@ -25,11 +25,10 @@ export default function Home() {
     setSize();
     window.addEventListener("resize", setSize);
 
-    const katakana =
-      "アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズヅブプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポ";
+   
     const latin = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     const nums = "0123456789";
-    const alphabet = katakana + latin + nums;
+    const alphabet =latin + nums;
 
     const fontSize = 16;
     const columns = Math.floor(el.width / fontSize);
