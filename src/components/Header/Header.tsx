@@ -5,7 +5,7 @@ import "./Header.css";
 
 /** Characters used while letters "spin" (Matrix vibe) */
 const CHARSET =
-  "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZアァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズヅブプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポ";
+  "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 /** Props for the rolling word component */
 interface SlotWordProps {
