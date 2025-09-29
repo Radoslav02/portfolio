@@ -1,11 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import "./Work.css";
+import critic from "../../assets/images/critic.png";
+import plant from "../../assets/images/plant.png";
+import valkyra from "../../assets/images/valkyra.png";
+import yplanner from "../../assets/images/yplanner.png";
+import portfolio from "../../assets/images/portfolio.png";
+import jarvis from "../../assets/images/jarvis.png";
 
 type Project = {
   title: string;
   note: string;
   href: string;
-  img: string;   // put your image path here (e.g. "/work/valkyra.jpg")
+  img: string;
 };
 
 const PROJECTS: Project[] = [
@@ -13,37 +19,37 @@ const PROJECTS: Project[] = [
     title: "Valkyra Shop",
     note: "Web shop for Valkyra Studio Design",
     href: "https://valkyra-shop.vercel.app",
-    img: "/work/valkyra.jpg",
+    img: `${valkyra}`,
   },
   {
     title: "Plant Centar",
     note: "Site for agricultural pharmacy Plant Centar",
     href: "https://plantcentar.com/pocetna",
-    img: "/work/plant-centar.jpg",
+    img: `${plant}`,
   },
   {
     title: "YPlanner",
     note: "Daily task planner",
     href: "https://github.com/Radoslav02/yplanner",
-    img: "/work/yplanner.jpg",
+    img: `${yplanner}`,
   },
   {
     title: "Critic Cafe",
     note: "Social network for movie lovers",
     href: "https://github.com/Radoslav02/CriticCafe",
-    img: "/work/critic-cafe.jpg",
+    img: `${critic}`,
   },
   {
     title: "Voice Assistant",
     note: "Voice assistant integrated with ChatGPT",
     href: "https://github.com/Radoslav02/voice-assistant",
-    img: "/work/voice-assistant.jpg",
+    img: `${jarvis}`,
   },
   {
     title: "Portfolio",
     note: "Personal portfolio site",
     href: "https://github.com/Radoslav02/portfolio",
-    img: "/work/portfolio.jpg",
+    img: `${portfolio}`,
   },
 ];
 
@@ -51,12 +57,12 @@ export default function Work() {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [inView, setInView] = useState(false);
 
-  // simple reveal when section enters viewport
   useEffect(() => {
     const el = rootRef.current;
     if (!el) return;
     const io = new IntersectionObserver(
-      ([entry]) => setInView(entry.isIntersecting && entry.intersectionRatio > 0.35),
+      ([entry]) =>
+        setInView(entry.isIntersecting && entry.intersectionRatio > 0.35),
       { threshold: [0, 0.35, 1] }
     );
     io.observe(el);

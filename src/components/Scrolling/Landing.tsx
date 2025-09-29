@@ -14,12 +14,16 @@ import "./Landing.css";
 gsap.registerPlugin(ScrollToPlugin);
 
 const SECTIONS = ["home", "about", "skills", "work", "contact"] as const;
-type SectionKey = typeof SECTIONS[number];
+type SectionKey = (typeof SECTIONS)[number];
 
 export default function Landing() {
   const scrollerRef = useRef<HTMLElement | null>(null);
   const sectionEls = useRef<Record<SectionKey, HTMLElement | null>>({
-    home: null, about: null, skills: null, work: null, contact: null,
+    home: null,
+    about: null,
+    skills: null,
+    work: null,
+    contact: null,
   });
 
   const navigate = useNavigate();
@@ -28,7 +32,7 @@ export default function Landing() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const isAnimatingRef = useRef(false);
   const lastWheelTsRef = useRef(0);
-  const pendingIndexRef = useRef<number | null>(null); // ako dođe nova ruta tokom animacije
+  const pendingIndexRef = useRef<number | null>(null);
 
   const setRef = (key: SectionKey) => (el: HTMLElement | null) => {
     sectionEls.current[key] = el;
@@ -46,7 +50,6 @@ export default function Landing() {
     const target = sectionEls.current[key];
     if (!scroller || !target) return;
 
-    // prekini prethodne tweenove nad scrollerom da ne ostanu "viseci"
     gsap.killTweensOf(scroller);
 
     isAnimatingRef.current = true;
@@ -60,8 +63,10 @@ export default function Landing() {
         setCurrentIndex(index);
         isAnimatingRef.current = false;
 
-        // ako se tokom animacije tražila nova destinacija (npr. klik u headeru), odvezimo i nju
-        if (pendingIndexRef.current !== null && pendingIndexRef.current !== index) {
+        if (
+          pendingIndexRef.current !== null &&
+          pendingIndexRef.current !== index
+        ) {
           const next = pendingIndexRef.current;
           pendingIndexRef.current = null;
           animateTo(next);
@@ -70,30 +75,26 @@ export default function Landing() {
     });
   };
 
-  // Ruta -> skrol (radi i za klikove iz Header-a i direktan URL)
   useEffect(() => {
     const targetIdx = indexOfPath(pathname);
     if (isAnimatingRef.current) {
-      // ako animacija u toku — zapamti željeni index pa odradi posle
       pendingIndexRef.current = targetIdx;
     } else if (targetIdx !== currentIndex) {
       animateTo(targetIdx);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
-  // Wheel -> odmah sledeća/prethodna sekcija
   useEffect(() => {
     const scroller = scrollerRef.current;
     if (!scroller) return;
 
-    const COOLDOWN = 700; // ms – minimalni razmak između prelaza
+    const COOLDOWN = 700;
     const onWheel = (e: WheelEvent) => {
-      // Za potpuno kontrolisan paging: spreči nativni scroll
       e.preventDefault();
 
       const now = performance.now();
-      if (isAnimatingRef.current || now - lastWheelTsRef.current < COOLDOWN) return;
+      if (isAnimatingRef.current || now - lastWheelTsRef.current < COOLDOWN)
+        return;
 
       const dir = e.deltaY > 0 ? 1 : -1;
       let next = currentIndex + dir;
@@ -102,17 +103,14 @@ export default function Landing() {
 
       lastWheelTsRef.current = now;
 
-      // ažuriramo rutu (Landing useEffect će pozvati animateTo)
       navigate(`/${SECTIONS[next]}`, { replace: false });
     };
 
-    // bitno: passive: false da bismo smeli e.preventDefault()
     scroller.addEventListener("wheel", onWheel, { passive: false });
 
     return () => scroller.removeEventListener("wheel", onWheel as any);
   }, [currentIndex, navigate]);
 
-  // Na mount: poravnaj se sa trenutnom rutom bez animacije (prvi render)
   useEffect(() => {
     const scroller = scrollerRef.current;
     if (!scroller) return;
@@ -123,31 +121,58 @@ export default function Landing() {
       scroller.scrollTo({ top: target.offsetTop, behavior: "auto" });
       setCurrentIndex(idx);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
     <main ref={scrollerRef} className="snap-container">
-      <section ref={setRef("home")} data-section="home" className="snap-section">
+      <section
+        ref={setRef("home")}
+        data-section="home"
+        className="snap-section"
+      >
         <div className="home-section-wrap">
           <Home />
         </div>
       </section>
 
-      <section ref={setRef("about")} data-section="about" className="snap-section">
-        <div className="center-wrap"><About /></div>
+      <section
+        ref={setRef("about")}
+        data-section="about"
+        className="snap-section"
+      >
+        <div className="center-wrap">
+          <About />
+        </div>
       </section>
 
-      <section ref={setRef("skills")} data-section="skills" className="snap-section">
-        <div className="center-wrap"><Skills /></div>
+      <section
+        ref={setRef("skills")}
+        data-section="skills"
+        className="snap-section"
+      >
+        <div className="center-wrap">
+          <Skills />
+        </div>
       </section>
 
-      <section ref={setRef("work")} data-section="work" className="snap-section">
-        <div className="center-wrap"><Work /></div>
+      <section
+        ref={setRef("work")}
+        data-section="work"
+        className="snap-section"
+      >
+        <div className="center-wrap">
+          <Work />
+        </div>
       </section>
 
-      <section ref={setRef("contact")} data-section="contact" className="snap-section">
-        <div className="center-wrap"><Contact /></div>
+      <section
+        ref={setRef("contact")}
+        data-section="contact"
+        className="snap-section"
+      >
+        <div className="center-wrap">
+          <Contact />
+        </div>
       </section>
     </main>
   );

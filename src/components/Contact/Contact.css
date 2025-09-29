@@ -1,39 +1,57 @@
 .contact-section {
   background: #000;
   color: #fff;
+
+  display: grid;
+  place-items: center;
+
   min-height: 100vh;
-  padding: clamp(48px, 6vw, 80px) 20px;
-  display: flex;
-  justify-content: center;
   width: 100%;
   z-index: 1999;
+
+  padding: clamp(36px, 6vw, 80px) max(16px, env(safe-area-inset-right))
+    clamp(36px, 8vh, 100px) max(16px, env(safe-area-inset-left));
 }
 
 .contact-wrap {
-  max-width: 800px;
   width: 100%;
+  max-width: min(860px, 94vw);
+  margin: 0 auto;
   text-align: center;
 }
 
-/* Naslov */
 .contact-title {
-  font-size: clamp(32px, 6vw, 56px);
+  font-size: clamp(28px, 6vw, 56px);
   font-weight: 800;
-  margin-bottom: 32px;
+  margin: 0 0 clamp(16px, 3vh, 32px);
   color: #00ff8a;
   text-shadow: 0 0 8px rgba(0, 255, 138, 0.6);
 }
 
-/* Podaci */
 .contact-info {
-  margin-bottom: 32px;
+  margin: 0 auto clamp(24px, 4vh, 32px);
+  width: 100%;
+  max-width: 60ch;
 }
 
 .contact-info p {
-  font-size: clamp(16px, 2vw, 18px);
-  margin: 12px 0;
+  font-size: clamp(15px, 2.2vw, 18px);
+  margin: 10px 0;
   color: #ccc;
   text-shadow: 0 0 4px rgba(0, 255, 138, 0.25);
+}
+
+.contact-link {
+  color: inherit;
+  text-decoration: none;
+  border-radius: 10px;
+  padding: 6px 10px;
+  transition: background 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+}
+.contact-link:hover {
+  color: #fff;
+  background: rgba(0, 255, 138, 0.08);
+  box-shadow: 0 0 10px rgba(0, 255, 138, 0.25);
 }
 
 .slot-letter {
@@ -41,22 +59,27 @@
   min-width: 0.6ch;
 }
 
-/* Dugme za CV */
 .cv-button {
   display: inline-block;
-  padding: 12px 28px;
+  padding: clamp(10px, 1.6vw, 12px) clamp(20px, 3vw, 28px);
   background: #00ff8a;
   color: #000;
-  font-weight: 700;
-  border-radius: 8px;
+  font-weight: 800;
+  border-radius: 10px;
   text-decoration: none;
-  font-size: 16px;
-  transition: all 0.3s ease;
+  font-size: clamp(14px, 2vw, 16px);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
   box-shadow: 0 0 10px rgba(0, 255, 138, 0.7);
 }
-
 .cv-button:hover {
   background: #00e07c;
   box-shadow: 0 0 20px rgba(0, 255, 138, 1);
-  transform: scale(1.05);
+  transform: translateY(-1px) scale(1.03);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .contact-link,
+  .cv-button {
+    transition: none !important;
+  }
 }

@@ -1,42 +1,35 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { gsap } from "gsap";
+import MenuIcon from "@mui/icons-material/Menu";
+import CloseIcon from "@mui/icons-material/Close";
 import "./Header.css";
 
-/** Characters used while letters "spin" (Matrix vibe) */
-const CHARSET =
-  "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const CHARSET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-/** Props for the rolling word component */
 interface SlotWordProps {
   text: string;
   className?: string;
   onClick?: () => void;
 
-  /** animation timings */
-  startDelay?: number;      // when the first letter starts
-  perCharStagger?: number;  // delay added per letter (creates wave)
-  baseDuration?: number;    // base length of each letter's roll
-  randomDuration?: number;  // random extra time per letter
+  startDelay?: number;
+  perCharStagger?: number;
+  baseDuration?: number;
+  randomDuration?: number;
 
-  /** callback when the entire word has settled */
   onAllComplete?: () => void;
-
-  /** after settle, replace spans with plain text (better kerning) */
   collapseAfter?: boolean;
 }
 
-/** Random char from the charset */
 const randomGlyph = () => CHARSET[Math.floor(Math.random() * CHARSET.length)];
 
-/** Animate a single span to "roll" and then land on its final char */
 function rollLetter(
   span: HTMLSpanElement,
   finalChar: string,
   duration: number,
   delay: number
 ) {
-  const proxy = { t: 0 }; // gsap animates numbers; we swap text onUpdate
+  const proxy = { t: 0 };
   return gsap.to(proxy, {
     t: 1,
     duration,
@@ -51,18 +44,29 @@ function rollLetter(
   });
 }
 
-/** Calculate when the whole word is done */
 function calcFinishTime(
   letterCount: number,
-  { startDelay, perCharStagger, baseDuration, randomDuration }: Required<
-    Pick<SlotWordProps, "startDelay" | "perCharStagger" | "baseDuration" | "randomDuration">
+  {
+    startDelay,
+    perCharStagger,
+    baseDuration,
+    randomDuration,
+  }: Required<
+    Pick<
+      SlotWordProps,
+      "startDelay" | "perCharStagger" | "baseDuration" | "randomDuration"
+    >
   >
 ) {
-  // conservative upper bound (last letter + its possible extra)
-  return startDelay + letterCount * perCharStagger + baseDuration + randomDuration + 0.2;
+  return (
+    startDelay +
+    letterCount * perCharStagger +
+    baseDuration +
+    randomDuration +
+    0.2
+  );
 }
 
-/** After all letters settle, optionally collapse spans -> plain text for nice kerning */
 function scheduleCollapse(
   el: HTMLElement,
   text: string,
@@ -72,15 +76,14 @@ function scheduleCollapse(
 ) {
   return gsap.delayedCall(totalFinish, () => {
     if (collapseAfter) {
-      el.replaceChildren();   // clear all spans
-      el.textContent = text;  // set the final word as plain text
+      el.replaceChildren();
+      el.textContent = text;
     }
     gsap.set(el, { pointerEvents: "auto" });
     onAllComplete?.();
   });
 }
 
-/** A word whose letters roll through glyphs before settling to the target text */
 function SlotWord({
   text,
   className,
@@ -99,16 +102,13 @@ function SlotWord({
     const el = containerRef.current;
     if (!el) return;
 
-    // Prevent clicks while rolling
     gsap.set(el, { pointerEvents: "none" });
 
-    // Scope all GSAP calls to this element for tidy cleanup
     const ctx = gsap.context(() => {
       const spans = Array.from(
         el.querySelectorAll<HTMLSpanElement>("[data-letter]")
       );
 
-      // Start a tween per letter
       const tweens: gsap.core.Tween[] = [];
       spans.forEach((span, idx) => {
         const finalChar = span.dataset.letter ?? "";
@@ -123,7 +123,6 @@ function SlotWord({
         tweens.push(rollLetter(span, finalChar, duration, delay));
       });
 
-      // When all letters should be done, enable clicks and (optionally) collapse to text
       const totalFinish = calcFinishTime(letters.length, {
         startDelay,
         perCharStagger,
@@ -132,11 +131,18 @@ function SlotWord({
       });
 
       scheduleCollapse(el, text, totalFinish, collapseAfter, onAllComplete);
-    }, containerRef); // <= everything inside is tied to this ref
-
-    // Cleanup all animations related to this component
+    }, containerRef);
     return () => ctx.revert();
-  }, [letters, text, startDelay, perCharStagger, baseDuration, randomDuration, onAllComplete, collapseAfter]);
+  }, [
+    letters,
+    text,
+    startDelay,
+    perCharStagger,
+    baseDuration,
+    randomDuration,
+    onAllComplete,
+    collapseAfter,
+  ]);
 
   return (
     <span
@@ -145,6 +151,12 @@ function SlotWord({
       onClick={onClick}
       role="button"
       tabIndex={0}
+      onKeyDown={(e) => {
+        if ((e.key === "Enter" || e.key === " ") && onClick) {
+          e.preventDefault();
+          onClick();
+        }
+      }}
     >
       {letters.map((ch, i) => (
         <span key={i} data-letter={ch} className="slot-letter">
@@ -159,10 +171,15 @@ export default function Header() {
   const navigate = useNavigate();
   const headerRef = useRef<HTMLDivElement | null>(null);
 
-  // Small entrance for the whole header bar
+  const [open, setOpen] = useState(false);
+  const overlayRef = useRef<HTMLDivElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+
+  const closeMobile = useCallback(() => setOpen(false), []);
+  const openMobile = useCallback(() => setOpen(true), []);
+
   useEffect(() => {
     if (!headerRef.current) return;
-
     const ctx = gsap.context(() => {
       const t = gsap.from(headerRef.current!, {
         y: -12,
@@ -170,7 +187,6 @@ export default function Header() {
         duration: 0.4,
         ease: "power2.out",
         onComplete() {
-          // Remove inline styles so CSS takes over after the tween
           gsap.set(headerRef.current!, {
             clearProps: "opacity,visibility,transform",
           });
@@ -178,39 +194,140 @@ export default function Header() {
       });
       return () => t.kill();
     }, headerRef);
-
-    return () => ctx.revert(); // ✅ proper cleanup, returns void
+    return () => ctx.revert();
   }, []);
 
+  useEffect(() => {
+    const body = document.body;
+
+    if (open) {
+      const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+      body.style.overflow = "hidden";
+      tl.set(overlayRef.current, { pointerEvents: "auto" })
+        .fromTo(
+          overlayRef.current,
+          { autoAlpha: 0 },
+          { autoAlpha: 1, duration: 0.2 }
+        )
+        .fromTo(
+          panelRef.current,
+          { yPercent: -5, autoAlpha: 0 },
+          { yPercent: 0, autoAlpha: 1, duration: 0.22 },
+          "<"
+        );
+      return () => {
+        body.style.overflow = "";
+        tl.kill();
+      };
+    } else {
+      const tl = gsap.timeline({
+        defaults: { ease: "power3.inOut" },
+        onComplete() {
+          gsap.set(headerRef.current!, {
+            clearProps: "opacity,visibility,transform",
+          });
+        },
+      });
+      tl.to(panelRef.current, {
+        yPercent: -4,
+        autoAlpha: 0,
+        duration: 0.18,
+      }).to(overlayRef.current, { autoAlpha: 0, duration: 0.18 }, "<");
+      return () => tl.kill();
+    }
+  }, [open]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  const MenuLink = (props: { label: string; to: string; delay?: number }) => (
+    <SlotWord
+      text={props.label}
+      className="menu-item"
+      startDelay={props.delay ?? 0}
+      onClick={() => {
+        navigate(props.to);
+        closeMobile();
+      }}
+    />
+  );
+
   return (
-    <div ref={headerRef} className="header-container">
-      <div className="header-left">
-        <SlotWord
-          text="Radoslav"
-          className="header-title slot-title"
-          startDelay={0.2}
-          perCharStagger={0.07}
-          baseDuration={0.65}
-          randomDuration={0.5}
-          onAllComplete={() => {
-            // Little glow pulse once the title settles
-            gsap.fromTo(
-              ".header-title",
-              { textShadow: "0 0 0px rgba(0,255,138,0.0)" },
-              { textShadow: "0 0 12px rgba(0,255,138,0.8)", duration: 0.25, yoyo: true, repeat: 1 }
-            );
-          }}
-        />
+    <>
+      <div ref={headerRef} className="header-container">
+        <div className="header-left">
+          <SlotWord
+            text="Radoslav"
+            className="header-title slot-title"
+            startDelay={0.2}
+            perCharStagger={0.07}
+            baseDuration={0.65}
+            randomDuration={0.5}
+            onAllComplete={() => {
+              gsap.fromTo(
+                ".header-title",
+                { textShadow: "0 0 0px rgba(0,255,138,0.0)" },
+                {
+                  textShadow: "0 0 12px rgba(0,255,138,0.8)",
+                  duration: 0.25,
+                  yoyo: true,
+                  repeat: 1,
+                }
+              );
+            }}
+          />
+        </div>
+        <div className="header-right desktop-only">
+          <MenuLink label="Home" to="/home" delay={3.0} />
+          <MenuLink label="About" to="/about" delay={3.1} />
+          <MenuLink label="Skills" to="/skills" delay={3.2} />
+          <MenuLink label="Work" to="/work" delay={3.3} />
+          <MenuLink label="Contact" to="/contact" delay={3.4} />
+        </div>
+
+        <button
+          className="burger-btn mobile-only"
+          aria-label={open ? "Close menu" : "Open menu"}
+          aria-controls="mobile-menu"
+          aria-expanded={open}
+          onClick={() => (open ? closeMobile() : openMobile())}
+        >
+          {open ? (
+            <CloseIcon fontSize="inherit" />
+          ) : (
+            <MenuIcon fontSize="inherit" />
+          )}
+        </button>
       </div>
 
-      <div className="header-right">
-        {/* Menu rolls after ~3s */}
-        <SlotWord text="Home"    className="menu-item" startDelay={3.0} onClick={() => navigate("/home")} />
-        <SlotWord text="About"   className="menu-item" startDelay={3.1} onClick={() => navigate("/about")} />
-        <SlotWord text="Skills"  className="menu-item" startDelay={3.2} onClick={() => navigate("/skills")} />
-        <SlotWord text="Work"    className="menu-item" startDelay={3.3} onClick={() => navigate("/work")} />
-        <SlotWord text="Contact" className="menu-item" startDelay={3.4} onClick={() => navigate("/contact")} />
+      <div
+        ref={overlayRef}
+        className="mobile-overlay"
+        onClick={closeMobile}
+        aria-hidden={!open}
+      >
+        <div
+          id="mobile-menu"
+          className="mobile-panel"
+          ref={panelRef}
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <nav className="mobile-nav">
+            <MenuLink label="Home" to="/home" />
+            <MenuLink label="About" to="/about" />
+            <MenuLink label="Skills" to="/skills" />
+            <MenuLink label="Work" to="/work" />
+            <MenuLink label="Contact" to="/contact" />
+          </nav>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

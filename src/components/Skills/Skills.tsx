@@ -4,21 +4,17 @@ import "./Skills.css";
 
 type Skill = {
   name: string;
-  value: number;
-  color: "orange" | "blue" | "gold" | "green";
 };
 
 const SKILLS: Skill[] = [
-  { name: "Java", value: 80, color: "orange" },
-  { name: "JavaScript", value: 90, color: "blue" },
-  { name: "CSS", value: 85, color: "green" },
-  { name: "HTML", value: 90, color: "gold" },
+  { name: "Java" },
+  { name: "JavaScript" },
+  { name: "CSS" },
+  { name: "HTML" },
 ];
-
 
 const CHARSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
-/** Generički slot teksta: animira SVAKI karakter */
 function SlotText({
   text,
   className,
@@ -39,9 +35,22 @@ function SlotText({
   const ref = useRef<HTMLSpanElement | null>(null);
   const letters = useMemo(() => text.split(""), [text]);
 
+  const prefersReduced =
+    typeof window !== "undefined" &&
+    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+  const runningRef = useRef(false);
+
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+
+    if (prefersReduced) {
+      el.textContent = letters.join("");
+      return;
+    }
+    if (runningRef.current) return;
+    runningRef.current = true;
 
     gsap.set(el, { pointerEvents: "none" });
 
@@ -89,30 +98,32 @@ function SlotText({
       const fin = gsap.delayedCall(totalFinish, () => {
         if (collapseAfter) {
           el.replaceChildren();
-          el.textContent = text;
+          el.textContent = letters.join("");
         }
         gsap.set(el, { pointerEvents: "auto" });
+        runningRef.current = false;
       });
 
       return () => {
         tweens.forEach((t) => t.kill());
         fin.kill();
+        runningRef.current = false;
       };
     }, ref);
 
     return () => ctx.revert();
   }, [
     letters,
-    text,
     startDelay,
     perCharStagger,
     baseDuration,
     randomDuration,
     collapseAfter,
+    prefersReduced,
   ]);
 
   return (
-    <span ref={ref} className={className}>
+    <span ref={ref} className={className} aria-label={letters.join("")}>
       {letters.map((ch, i) => (
         <span key={i} data-letter={ch} className="slot-letter">
           {ch === " " ? " " : ""}
@@ -124,34 +135,44 @@ function SlotText({
 
 export default function Skills() {
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const [inView, setInView] = useState(false);
-  const [runId, setRunId] = useState(0); // remount slot teksta kad uđe u viewport
+  const [runId, setRunId] = useState(0);
+  const hasTriggeredRef = useRef(false);
 
-  // Posmatraj ulazak sekcije u viewport
   useEffect(() => {
     const el = rootRef.current;
     if (!el) return;
+
     const io = new IntersectionObserver(
       ([entry]) => {
-        const seen = entry.isIntersecting && entry.intersectionRatio > 0.4;
-        setInView(seen);
-        if (seen) setRunId((n) => n + 1); // pokreni slot animacije iznova
+        if (entry.isIntersecting && !hasTriggeredRef.current) {
+          hasTriggeredRef.current = true;
+          setRunId((n) => n + 1);
+          io.unobserve(el);
+        }
       },
-      { threshold: [0, 0.25, 0.4, 0.75, 1] }
+      {
+        threshold: 0.6,
+        root: null,
+        rootMargin: "0px 0px -15% 0px",
+      }
     );
+
     io.observe(el);
     return () => io.disconnect();
   }, []);
 
   return (
-    <section ref={rootRef} className="skills-section" id="skills">
+    <section
+      ref={rootRef}
+      className="skills-section"
+      id="skills"
+      aria-labelledby="skills-title"
+    >
       <div className="skills-wrap">
-        <h2 className="skills-title">
-          {/* key osigurava restart animacije naslova svaki put */}
+        <h2 className="skills-title" id="skills-title">
           <SlotText
             key={`title-${runId}`}
             text="My Skills"
-            className=""
             startDelay={0.1}
             perCharStagger={0.07}
             baseDuration={0.6}
@@ -160,23 +181,12 @@ export default function Skills() {
         </h2>
 
         <div className="skills-grid">
-          {/* Levo: uvod (i on se rola) */}
+          {/* Levo: intro tekst */}
           <div className="skills-intro">
-            <h3>
-              <SlotText
-                key={`h3-${runId}`}
-                text="My Skills and Experiences"
-                startDelay={0.15}
-                perCharStagger={0.03}
-                baseDuration={0.5}
-                randomDuration={0.4}
-              />
-            </h3>
             <p>
               <SlotText
-                key={`p-${runId}`}
-                text="I started my journey with a two-week internship where I learned the fundamentals of React and gained an understanding of core frontend concepts. After the internship, I continued learning on my own, working on several mini projects to improve my practical skills and deepen my knowledge.
-Currently, I’m working at Payspot as a Junior Frontend Developer, where I focus on building applications using React, React Native and C#. I’m constantly improving my skills and expanding my expertise in modern frontend development."
+                key={`intro-${runId}`}
+                text="I started my journey with a two-week internship where I learned the fundamentals of React and gained an understanding of core frontend concepts. After the internship, I continued learning on my own, working on several mini projects to improve my practical skills and deepen my knowledge. Currently, I’m working at Payspot as a Junior Frontend Developer, where I focus on building applications using React, React Native and C#. I’m constantly improving my skills and expanding my expertise in modern frontend development."
                 startDelay={0.2}
                 perCharStagger={0.015}
                 baseDuration={0.45}
@@ -185,53 +195,27 @@ Currently, I’m working at Payspot as a Junior Frontend Developer, where I focu
             </p>
           </div>
 
-          <div className="skills-bars">
+          <div className="skills-list">
             {SKILLS.map((s, i) => (
-              <SkillBar
+              <div
+                className="skill-label-big"
                 key={s.name}
-                label={s.name}
-                value={s.value}
-                color={s.color}
-                animate={inView}
-                delayMs={200 * i}
-              />
+                style={{ transitionDelay: `${80 * i}ms` }}
+              >
+                <SlotText
+                  key={`skill-${runId}-${s.name}`}
+                  text={s.name}
+                  startDelay={0.15 + i * 0.05}
+                  perCharStagger={0.035}
+                  baseDuration={0.45}
+                  randomDuration={0.3}
+                  collapseAfter={true}
+                />
+              </div>
             ))}
           </div>
         </div>
       </div>
     </section>
-  );
-}
-
-function SkillBar({
-  label,
-  value,
-  color,
-  animate,
-  delayMs = 0,
-}: {
-  label: string;
-  value: number; // 0..100
-  color: "orange" | "blue" | "gold" | "green";
-  animate: boolean;
-  delayMs?: number;
-}) {
-  return (
-    <div className="skill">
-      <div className="skill-head">
-        <span className="skill-label">{label}</span>
-        <span className="skill-value">{value}%</span>
-      </div>
-      <div className="track" aria-hidden="true">
-        <div
-          className={`fill ${color} ${animate ? "is-on" : ""}`}
-          style={
-            animate
-              ? { width: `${value}%`, transitionDelay: `${delayMs}ms` }
-              : { width: "0%" }
-          }
-        />
-      </div>
-    </div>
   );
 }

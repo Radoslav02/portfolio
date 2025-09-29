@@ -1,18 +1,22 @@
 .header-container {
   position: fixed;
-  top: 0; left: 0; right: 0;
-  height: 120px;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 72px;
   background: #000;
-  z-index: 2000;        /* above everything */
-  isolation: isolate;   /* own stacking context */
+  z-index: 2000;
+  isolation: isolate;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 50px;
-  gap: 24px;
+  padding: 0 20px;
+  gap: 16px;
+  border-bottom: 1px solid rgba(0, 255, 138, 0.12);
 }
 
-.header-left, .header-right {
+.header-left,
+.header-right {
   display: flex;
   align-items: center;
 }
@@ -20,9 +24,9 @@
 .header-title {
   margin: 0;
   color: #00ff8a;
-  font-size: 28px;
+  font-size: clamp(20px, 2vw, 28px);
   letter-spacing: 1px;
-  text-shadow: 0 0 6px rgba(0,255,138,0.5);
+  text-shadow: 0 0 6px rgba(0, 255, 138, 0.5);
   cursor: pointer;
 }
 
@@ -32,36 +36,30 @@
 
 .menu-item {
   color: #00ff8a;
-  font-size: 18px;
+  font-size: clamp(16px, 1.4vw, 18px);
   letter-spacing: 0.5px;
-  text-shadow: 0 0 6px rgba(0,255,138,0.45);
+  text-shadow: 0 0 6px rgba(0, 255, 138, 0.45);
   cursor: pointer;
   display: inline-flex;
 }
 
 .menu-item .slot-letter {
   display: inline-block;
-  min-width: 0.6ch; /* keep width stable during roll */
+  min-width: 0.6ch;
 }
 
-/* 🌟 General Hover Styling */
 .menu-item,
 .header-title {
   position: relative;
   transition: color 0.25s ease, text-shadow 0.25s ease;
 }
 
-/* ✨ Neon glow intensifies on hover */
 .menu-item:hover,
 .header-title:hover {
-  color: #00ffaa; /* brighter green */
-  text-shadow: 
-    0 0 6px #00ffaa,
-    0 0 12px #00ffaa,
-    0 0 20px #00ffaa;
+  color: #00ffaa;
+  text-shadow: 0 0 6px #00ffaa, 0 0 12px #00ffaa, 0 0 20px #00ffaa;
 }
 
-/* ⚡ Glitchy animated underline for menu items */
 .menu-item::after {
   content: "";
   position: absolute;
@@ -75,14 +73,13 @@
   transition: transform 0.25s ease-out;
   box-shadow: 0 0 8px #00ffaa, 0 0 16px #00ffaa;
 }
-
 .menu-item:hover::after {
   transform: scaleX(1);
 }
 
-/* 🟢 Matrix-like flicker effect */
 @keyframes matrixFlicker {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
     text-shadow: 0 0 6px #00ff8a, 0 0 10px #00ff8a;
   }
@@ -91,8 +88,94 @@
     text-shadow: 0 0 3px #00ffaa, 0 0 6px #00ffaa;
   }
 }
-
 .menu-item:hover {
   animation: matrixFlicker 0.3s ease-in-out infinite alternate;
 }
 
+.burger-btn {
+  display: none;
+  width: 40px;
+  height: 40px;
+  font-size: 28px;
+  color: #00ff8a;
+  background: transparent;
+  border: 1px solid rgba(0, 255, 138, 0.25);
+  border-radius: 10px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+}
+.burger-btn:hover {
+  color: #00ffaa;
+  border-color: rgba(0, 255, 170, 0.5);
+  box-shadow: 0 0 8px rgba(0, 255, 170, 0.35);
+}
+
+.mobile-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 1999;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.mobile-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  background: #020202;
+  border-bottom: 1px solid rgba(0, 255, 138, 0.2);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  padding: 80px 24px 24px;
+  opacity: 0;
+}
+.mobile-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.mobile-nav .menu-item {
+  font-size: 22px;
+}
+
+.desktop-only {
+  display: flex;
+}
+.mobile-only {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .header-container {
+    padding: 0 16px;
+  }
+  .header-right {
+    gap: 14px;
+  }
+}
+
+@media (max-width: 900px) {
+  .desktop-only {
+    display: none;
+  }
+  .mobile-only {
+    display: inline-flex;
+  }
+  .header-container {
+    height: 68px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-title {
+    font-size: 20px;
+  }
+  .burger-btn {
+    width: 38px;
+    height: 38px;
+    font-size: 26px;
+  }
+}

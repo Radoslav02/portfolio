@@ -9,37 +9,70 @@ export default function Home() {
   const [showImage, setShowImage] = useState(false);
   const [showIcons, setShowIcons] = useState(false);
 
-  // 1. Matrix rain effect
+  const prefersReduced =
+    typeof window !== "undefined" &&
+    window.matchMedia &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
   useEffect(() => {
     const el = canvasRef.current;
-    if (!(el instanceof HTMLCanvasElement)) return; // ✅ canvas is a real <canvas>
+    if (!(el instanceof HTMLCanvasElement)) return;
 
     const ctx = el.getContext("2d");
-    if (!(ctx instanceof CanvasRenderingContext2D)) return; // ✅ real 2D context
+    if (!(ctx instanceof CanvasRenderingContext2D)) return;
 
-    // keep canvas sized to viewport
     const setSize = () => {
-      el.width = window.innerWidth;
-      el.height = window.innerHeight;
-    };
-    setSize();
-    window.addEventListener("resize", setSize);
+      const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+      const w = window.innerWidth;
+      const h = window.innerHeight;
 
-   
+      el.style.width = w + "px";
+      el.style.height = h + "px";
+      el.width = Math.floor(w * dpr);
+      el.height = Math.floor(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+
+    setSize();
+    let resizeTO: number | undefined;
+    const onResize = () => {
+      window.clearTimeout(resizeTO);
+      resizeTO = window.setTimeout(setSize, 150);
+    };
+    window.addEventListener("resize", onResize);
+
     const latin = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     const nums = "0123456789";
-    const alphabet =latin + nums;
+    const alphabet = latin + nums;
 
     const fontSize = 16;
-    const columns = Math.floor(el.width / fontSize);
-    const rainDrops: number[] = Array(columns).fill(1);
 
-    // ✅ Note the explicit types: no nullable canvas/ctx inside
-    const draw = (ctx: CanvasRenderingContext2D, c: HTMLCanvasElement) => {
+    const columns = () => Math.floor(el.clientWidth / fontSize);
+    let rainDrops: number[] = Array(columns()).fill(1);
+
+    const syncColumns = () => {
+      const c = columns();
+      if (c !== rainDrops.length) {
+        rainDrops = Array(c).fill(1);
+      }
+    };
+
+    let rafId = 0;
+    let lastTime = 0;
+    const intervalMs = 40;
+
+    const draw = (time: number) => {
+      rafId = window.requestAnimationFrame(draw);
+      if (prefersReduced) return;
+
+      if (time - lastTime < intervalMs) return;
+      lastTime = time;
+
+      syncColumns();
+
       ctx.fillStyle = "rgba(0, 0, 0, 0.07)";
-      ctx.fillRect(0, 0, c.width, c.height);
+      ctx.fillRect(0, 0, el.clientWidth, el.clientHeight);
 
-      // slightly dimmer letters
       ctx.fillStyle = "rgba(0, 255, 138, 0.65)";
       ctx.font = `${fontSize}px monospace`;
 
@@ -49,88 +82,97 @@ export default function Home() {
         );
         ctx.fillText(text, i * fontSize, rainDrops[i] * fontSize);
 
-        if (rainDrops[i] * fontSize > c.height && Math.random() > 0.975) {
+        if (
+          rainDrops[i] * fontSize > el.clientHeight &&
+          Math.random() > 0.975
+        ) {
           rainDrops[i] = 0;
         }
         rainDrops[i]++;
       }
     };
 
-    let intervalId: number | undefined;
-    const timeoutId = window.setTimeout(() => {
-      intervalId = window.setInterval(() => draw(ctx, el), 40);
-    }, 3500);
+    const startTO = window.setTimeout(
+      () => {
+        rafId = window.requestAnimationFrame(draw);
+      },
+      prefersReduced ? 0 : 1500
+    );
 
     return () => {
-      window.clearTimeout(timeoutId);
-      if (intervalId !== undefined) window.clearInterval(intervalId);
-      window.removeEventListener("resize", setSize);
+      window.clearTimeout(startTO);
+      window.cancelAnimationFrame(rafId);
+      window.removeEventListener("resize", onResize);
     };
-  }, []);
+  }, [prefersReduced]);
 
-  // 2. Reveal text, image & icons step by step
   useEffect(() => {
-    const t1 = setTimeout(() => setShowText(true), 5000); // show text
-    const t2 = setTimeout(() => setShowImage(true), 6500); // show image
-    const t3 = setTimeout(() => setShowIcons(true), 7500); // show icons
+    if (prefersReduced) {
+      setShowText(true);
+      setShowImage(true);
+      setShowIcons(true);
+      return;
+    }
+    const t1 = setTimeout(() => setShowText(true), 1200);
+    const t2 = setTimeout(() => setShowImage(true), 1600);
+    const t3 = setTimeout(() => setShowIcons(true), 1900);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
       clearTimeout(t3);
     };
-  }, []);
+  }, [prefersReduced]);
 
-  // 3. Animate text reveal with GSAP "decoding" effect
   const textRef = useRef<HTMLHeadingElement | null>(null);
   useEffect(() => {
-    if (!showText || !textRef.current) return;
+    if (!showText || !textRef.current || prefersReduced) return;
 
     const textElement = textRef.current;
-    const letters = textElement.innerText.split("");
+    const original = textElement.innerText;
+    const letters = original.split("");
     let iteration = 0;
 
     const interval = setInterval(() => {
       textElement.innerText = letters
         .map((letter, idx) => {
           if (idx < iteration) return letter;
-          return String.fromCharCode(0x30a0 + Math.random() * 96); // random katakana
+          return String.fromCharCode(0x30a0 + Math.random() * 96);
         })
         .join("");
 
-      if (iteration >= letters.length) clearInterval(interval);
-      iteration += 1 / 2;
+      if (iteration >= letters.length) {
+        textElement.innerText = original;
+        clearInterval(interval);
+      }
+      iteration += 0.5;
     }, 30);
 
     return () => clearInterval(interval);
-  }, [showText]);
+  }, [showText, prefersReduced]);
 
   return (
     <div className="home-container">
-      {/* Matrix rain canvas */}
       <canvas ref={canvasRef} className="matrix-canvas" />
 
-      {/* Page content */}
       <div className="home-content">
-        {/* LEFT: Profile Image */}
         <div className={`home-image ${showImage ? "visible" : ""}`}>
           <img src={profileImage} alt="Radoslav" />
         </div>
 
-        {/* RIGHT: Intro Text */}
         <div className={`home-text ${showText ? "visible" : ""}`}>
           <h1 ref={textRef}>Hi, I’m Radoslav</h1>
           <p>
-            Software engineer| Angular | React | .NET Core | Java | 
-            I design and code things. and I love what I do.
+            Software engineer | Angular | React | .NET Core | Java | I design
+            and code things — and I love what I do.
           </p>
 
-          {/* Social Icons */}
           {showIcons && (
             <div className="social-icons">
               <a
                 href="https://github.com/Radoslav02"
                 target="_blank"
                 rel="noreferrer"
+                aria-label="GitHub"
               >
                 <FaGithub />
               </a>
@@ -138,6 +180,7 @@ export default function Home() {
                 href="https://www.linkedin.com/in/radoslav-pavkov-7a7421321/"
                 target="_blank"
                 rel="noreferrer"
+                aria-label="LinkedIn"
               >
                 <FaLinkedin />
               </a>
@@ -145,6 +188,7 @@ export default function Home() {
                 href="https://www.instagram.com/radoslavpavkov/"
                 target="_blank"
                 rel="noreferrer"
+                aria-label="Instagram"
               >
                 <FaInstagram />
               </a>

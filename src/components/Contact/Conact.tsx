@@ -4,7 +4,6 @@ import "./Contact.css";
 
 const CHARSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
-/** SlotText za animaciju karaktera */
 function SlotText({
   text,
   className,
@@ -25,14 +24,25 @@ function SlotText({
   const ref = useRef<HTMLSpanElement | null>(null);
   const letters = useMemo(() => text.split(""), [text]);
 
+  const prefersReduced =
+    typeof window !== "undefined" &&
+    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
 
+    if (prefersReduced) {
+      el.textContent = letters.join("");
+      return;
+    }
+
     gsap.set(el, { pointerEvents: "none" });
 
     const ctx = gsap.context(() => {
-      const spans = Array.from(el.querySelectorAll<HTMLSpanElement>("[data-letter]"));
+      const spans = Array.from(
+        el.querySelectorAll<HTMLSpanElement>("[data-letter]")
+      );
       const tweens: gsap.core.Tween[] = [];
 
       spans.forEach((span, i) => {
@@ -53,7 +63,8 @@ function SlotText({
             delay,
             ease: "power1.out",
             onUpdate: () => {
-              span.textContent = CHARSET[Math.floor(Math.random() * CHARSET.length)];
+              span.textContent =
+                CHARSET[Math.floor(Math.random() * CHARSET.length)];
             },
             onComplete: () => {
               span.textContent = finalChar;
@@ -63,12 +74,16 @@ function SlotText({
       });
 
       const totalFinish =
-        startDelay + letters.length * perCharStagger + baseDuration + randomDuration + 0.2;
+        startDelay +
+        letters.length * perCharStagger +
+        baseDuration +
+        randomDuration +
+        0.2;
 
       const fin = gsap.delayedCall(totalFinish, () => {
         if (collapseAfter) {
           el.replaceChildren();
-          el.textContent = text;
+          el.textContent = letters.join("");
         }
         gsap.set(el, { pointerEvents: "auto" });
       });
@@ -80,10 +95,18 @@ function SlotText({
     }, ref);
 
     return () => ctx.revert();
-  }, [letters, text, startDelay, perCharStagger, baseDuration, randomDuration, collapseAfter]);
+  }, [
+    letters,
+    startDelay,
+    perCharStagger,
+    baseDuration,
+    randomDuration,
+    collapseAfter,
+    prefersReduced,
+  ]);
 
   return (
-    <span ref={ref} className={className}>
+    <span ref={ref} className={className} aria-label={letters.join("")}>
       {letters.map((ch, i) => (
         <span key={i} data-letter={ch} className="slot-letter">
           {ch === " " ? " " : ""}
@@ -97,7 +120,6 @@ export default function Contact() {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [runId, setRunId] = useState(0);
 
-  // Restart animacije kad Contact uđe u viewport
   useEffect(() => {
     const el = rootRef.current;
     if (!el) return;
@@ -116,14 +138,17 @@ export default function Contact() {
   }, []);
 
   return (
-    <section ref={rootRef} className="contact-section" id="contact">
+    <section
+      ref={rootRef}
+      className="contact-section"
+      id="contact"
+      aria-labelledby="contact-title"
+    >
       <div className="contact-wrap">
-        {/* Naslov */}
-        <h2 className="contact-title">
+        <h2 className="contact-title" id="contact-title">
           <SlotText
             key={`title-${runId}`}
             text="Get in Touch"
-            className=""
             startDelay={0.1}
             perCharStagger={0.06}
             baseDuration={0.6}
@@ -133,22 +158,34 @@ export default function Contact() {
 
         <div className="contact-info">
           <p>
-            <SlotText
-              key={`phone-${runId}`}
-              text="📞 Phone: +381 69 388 9340"
-              startDelay={0.2}
-              perCharStagger={0.02}
-              baseDuration={0.5}
-            />
+            <a
+              className="contact-link"
+              href="tel:+381693889340"
+              aria-label="Call +381 69 388 9340"
+            >
+              <SlotText
+                key={`phone-${runId}`}
+                text="📞 Phone: +381 69 388 9340"
+                startDelay={0.2}
+                perCharStagger={0.02}
+                baseDuration={0.5}
+              />
+            </a>
           </p>
           <p>
-            <SlotText
-              key={`email-${runId}`}
-              text="📧 Email: radoslavpavkovg@gmail.com"
-              startDelay={0.3}
-              perCharStagger={0.02}
-              baseDuration={0.5}
-            />
+            <a
+              className="contact-link"
+              href="mailto:radoslavpavkovg@gmail.com"
+              aria-label="Email radoslavpavkovg@gmail.com"
+            >
+              <SlotText
+                key={`email-${runId}`}
+                text="📧 Email: radoslavpavkovg@gmail.com"
+                startDelay={0.3}
+                perCharStagger={0.02}
+                baseDuration={0.5}
+              />
+            </a>
           </p>
           <p>
             <SlotText
@@ -161,10 +198,9 @@ export default function Contact() {
           </p>
         </div>
 
-        {/* Dugme za CV */}
         <a
           className="cv-button"
-          href="/public/CV Radoslav Pavkov.pdf"
+          href="/CV Radoslav Pavkov.pdf"
           download="CV Radoslav Pavkov.pdf"
         >
           Download CV
